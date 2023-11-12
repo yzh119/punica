@@ -6,6 +6,10 @@
 #include "../flashinfer/page.cuh"
 #include "flashinfer_config.h"
 
+#if (!defined(__CUDA_ARCH__) || (__CUDA_ARCH__ >= 800))
+#define PUNICA_BF16_ENABLED
+#endif
+
 template <typename T>
 void FlashInferBatchDecodeKernel(T* o, T* q, T* kv_data, int32_t* kv_indptr,
                                  int32_t* kv_indicies,
@@ -68,7 +72,9 @@ void FlashInferAppendKvKernel(T* kv_data, int32_t* kv_indptr,
       int num_qo_heads, int num_kv_heads, int page_size, int batch_size);
 
 INST_FlashInferBatchDecodeKernel(nv_half);
+#ifdef PUNICA_BF16_ENABLED
 INST_FlashInferBatchDecodeKernel(nv_bfloat16);
+#endif
 
 #define INST_FlashInferInitKvKernel(head_dim, T)                               \
   template void FlashInferInitKvKernel<head_dim, T>(                           \
@@ -78,7 +84,9 @@ INST_FlashInferBatchDecodeKernel(nv_bfloat16);
       int batch_size);
 
 FOR_FlashInferBatchDecode_D(INST_FlashInferInitKvKernel, nv_half);
+#ifdef PUNICA_BF16_ENABLED
 FOR_FlashInferBatchDecode_D(INST_FlashInferInitKvKernel, nv_bfloat16);
+#endif
 
 #define INST_FlashInferAppendKvKernel(head_dim, T)                    \
   template void FlashInferAppendKvKernel<head_dim, T>(                \
@@ -86,4 +94,7 @@ FOR_FlashInferBatchDecode_D(INST_FlashInferInitKvKernel, nv_bfloat16);
       int32_t * last_page_offset, T * key, T * value, int num_layers, \
       int layer_idx, int num_kv_heads, int page_size, int batch_size);
 FOR_FlashInferBatchDecode_D(INST_FlashInferAppendKvKernel, nv_half);
+#ifdef PUNICA_BF16_ENABLED
 FOR_FlashInferBatchDecode_D(INST_FlashInferAppendKvKernel, nv_bfloat16);
+#endif
+

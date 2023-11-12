@@ -28,6 +28,10 @@ inline constexpr uint32_t pack_u16(uint16_t a, uint16_t b) {
   return (uint32_t(a) << 16) | uint32_t(b);
 }
 
+#if (!defined(__CUDA_ARCH__) || (__CUDA_ARCH__ >= 800))
+#define PUNICA_BF16_ENABLED
+#endif
+
 #define CHECK_CUDA(x) TORCH_CHECK(x.is_cuda(), #x " must be a CUDA tensor")
 
 #define CHECK_CONTIGUOUS(x) \
@@ -271,6 +275,7 @@ void dispatch_bgmv(torch::Tensor y, torch::Tensor x, torch::Tensor w,
                                 indicies.data_ptr<int64_t>(), h_in, h_out, B,
                                 num_layers, layer_idx, scale);
         break;
+#ifdef PUNICA_BF16_ENABLED
       case at::ScalarType::BFloat16:
         ok = launch_bgmv_kernel(static_cast<nv_bfloat16*>(y.data_ptr()),
                                 static_cast<nv_bfloat16*>(x.data_ptr()),
@@ -278,6 +283,7 @@ void dispatch_bgmv(torch::Tensor y, torch::Tensor x, torch::Tensor w,
                                 indicies.data_ptr<int64_t>(), h_in, h_out, B,
                                 num_layers, layer_idx, scale);
         break;
+#endif
       default:
         break;
     }
